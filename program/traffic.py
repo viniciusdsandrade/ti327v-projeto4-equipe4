@@ -11,11 +11,11 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 
 # Definições de hiperparâmetros
-EPOCHS = 10  # Número de épocas para o treinamento
-IMAGE_WIDTH = 30  # Largura das imagens após redimensionamento
+EPOCHS = 10        # Número de épocas para o treinamento
+IMAGE_WIDTH = 30   # Largura das imagens após redimensionamento
 IMAGE_HEIGHT = 30  # Altura das imagens após redimensionamento
-N = 43  # Número de categorias/classes de sinais de trânsito
-TEST_SIZE = 0.40  # Proporção de dados reservados para teste
+N = 43             # Número de categorias/classes de sinais de trânsito
+TEST_SIZE = 0.40   # Proporção de dados reservados para teste
 
 """
 Este script treina uma rede neural convolucional para classificar sinais de trânsito usando o conjunto de dados GTSRB (German Traffic Sign Recognition Benchmark).
