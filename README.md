@@ -162,7 +162,7 @@ Este projeto utiliza a licença **MIT**.
 
 ## 📞 Contato
 
-- **Anna Clara Ferraz** - [anna.ferraz@email.com](mailto:anna.ferraz@email.com)
-- **Vinícius Dos Santos Andrade** - [vinicius.andrade@email.com](mailto:vinicius.andrade@email.com)
+- **Anna Clara Ferraz** - [annaclara2006ferraz@gmail.com](mailto:annaclara2006ferraz@gmail.com)
+- **Vinícius Dos Santos Andrade** - [vinicius_andrade2010@hotmail.com](mailto:vinicius_andrade2010@hotmail.com)
 
 ---
