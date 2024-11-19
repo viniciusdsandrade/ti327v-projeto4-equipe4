@@ -1,0 +1,49 @@
+                                             precision    recall  f1-score   support
+
+              Limite de Velocidade (20km/h)       0.98      0.95      0.96        58
+              Limite de Velocidade (30km/h)       1.00      0.97      0.99       579
+              Limite de Velocidade (50km/h)       0.98      1.00      0.99       605
+              Limite de Velocidade (60km/h)       1.00      0.99      0.99       408
+              Limite de Velocidade (70km/h)       0.99      1.00      0.99       520
+              Limite de Velocidade (80km/h)       0.98      0.98      0.98       506
+       Fim do Limite de Velocidade (80km/h)       1.00      1.00      1.00       122
+             Limite de Velocidade (100km/h)       0.99      0.99      0.99       376
+             Limite de Velocidade (120km/h)       0.98      0.99      0.99       395
+                       Proibido Ultrapassar       1.00      0.99      1.00       392
+Proibido Ultrapassar Veículos acima de 3.5t       0.99      1.00      0.99       540
+                  Interseção com Prioridade       1.00      0.99      0.99       351
+                          Estrada Principal       0.99      0.99      0.99       568
+                           Dê a Preferência       0.99      1.00      1.00       578
+                                       Pare       1.00      1.00      1.00       233
+                          Trânsito Proibido       0.99      0.98      0.99       172
+                        Caminhões Proibidos       0.99      1.00      1.00       124
+                           Entrada Proibida       0.99      1.00      0.99       307
+                                     Perigo       0.99      1.00      1.00       305
+                  Curva Perigosa à Esquerda       0.95      0.97      0.96        62
+                   Curva Perigosa à Direita       0.99      0.99      0.99        97
+                                Dupla Curva       0.99      1.00      0.99        93
+                          Desnível na Pista       1.00      1.00      1.00       102
+                         Pista Escorregadia       0.99      0.99      0.99       157
+                     Estreitamento de Pista       0.98      0.98      0.98        63
+                                      Obras       0.99      0.99      0.99       425
+                          Semáforo à Frente       0.99      0.98      0.98       164
+                                  Pedestres       1.00      0.99      0.99        81
+                                   Crianças       0.99      0.99      0.99       160
+                                  Ciclistas       1.00      0.94      0.97        67
+                        Perigo de Neve/Gelo       0.98      1.00      0.99       112
+                          Animais Selvagens       0.98      1.00      0.99       215
+                 Fim de Todas as Restrições       0.97      1.00      0.98        63
+                             Vire à Direita       0.99      1.00      1.00       199
+                            Vire à Esquerda       0.99      1.00      1.00       111
+                             Siga em Frente       1.00      1.00      1.00       323
+                     Em Frente ou à Direita       1.00      0.99      0.99        86
+                    Em Frente ou à Esquerda       1.00      0.98      0.99        59
+                      Mantenha-se à Direita       0.99      0.99      0.99       551
+                     Mantenha-se à Esquerda       1.00      1.00      1.00        83
+                      Rotatória Obrigatória       0.99      1.00      1.00       102
+            Fim da Proibição de Ultrapassar       1.00      0.97      0.99        71
+  Fim da Proibição de Ultrapassar Caminhões       1.00      0.97      0.99        71
+
+                                   accuracy                           0.99     10656
+                                  macro avg       0.99      0.99      0.99     10656
+                               weighted avg       0.99      0.99      0.99     10656

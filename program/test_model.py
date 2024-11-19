@@ -6,22 +6,18 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 import sys
 import numpy as np
+from pathlib import Path
 from PIL import Image
 import tensorflow as tf
 import matplotlib.pyplot as plt
-import csv  # Importação adicionada para manipulação de CSV
+import seaborn as sns
+import csv  # Para manipulação de CSV
+from sklearn.metrics import confusion_matrix, classification_report
 
 # Definições de hiperparâmetros
 IMAGE_WIDTH = 30  # Largura das imagens após redimensionamento
 IMAGE_HEIGHT = 30  # Altura das imagens após redimensionamento
 N = 43  # Número de categorias/classes de sinais de trânsito
-
-"""
-Este script permite testar o modelo treinado para classificação de sinais de trânsito.
-O usuário pode selecionar diferentes configurações de diretórios através de um menu interativo.
-O script carrega o modelo treinado, processa as imagens de teste e realiza as previsões,
-salvando os resultados em arquivos CSV individuais para cada classe na pasta 'result'.
-"""
 
 # Dicionário de mapeamento das classes para os nomes dos sinais de trânsito
 classes = {
@@ -71,37 +67,53 @@ classes = {
 }
 
 
-def mostrar_menu():
+def detect_base_dir(target_folder_name="9-cnn"):
     """
-    Exibe um menu interativo para o usuário selecionar a configuração desejada.
+    Detecta automaticamente o caminho base da aplicação percorrendo o diretório pai até encontrar a pasta alvo.
 
-    As opções incluem diferentes diretórios de dados e locais para carregar o modelo.
+    Parâmetros:
+        target_folder_name (str): O nome da pasta alvo que representa o caminho base da aplicação.
+
+    Retorna:
+        Path: O caminho para a pasta alvo.
+
+    Se a pasta alvo não for encontrada, o script será encerrado com uma mensagem de erro.
+    """
+    current_dir = Path(__file__).resolve().parent
+    while True:
+        if current_dir.name == target_folder_name:
+            return current_dir
+        if current_dir.parent == current_dir:
+            # Chegou ao diretório raiz sem encontrar a pasta alvo
+            break
+        current_dir = current_dir.parent
+
+    print(f"Pasta base '{target_folder_name}' não encontrada. Verifique a estrutura de diretórios.")
+    sys.exit(1)
+
+
+def config_paths(base_dir):
+    """
+    Configura os caminhos para data_directory e model_filename relativamente ao caminho base.
+
+    Parâmetros:
+        base_dir (Path): O caminho base da aplicação.
 
     Retorna:
         tuple: Uma tupla contendo:
-            - model_filename (str): Caminho para o modelo treinado.
-            - data_directory (str): Caminho para o diretório de dados.
-            - config_name (str): Nome da configuração selecionada.
+            - data_directory (Path): Caminho para o diretório de dados.
+            - model_filename (Path): Caminho para salvar o modelo treinado.
+            - config_name (str): Nome da configuração (baseado no ambiente, se necessário).
     """
-    print("Selecione a configuração:")
-    print("1. desktop_vini")
-    print("2. laptop_vini")
+    # Ajuste os caminhos conforme a estrutura do seu projeto
+    data_directory = base_dir / "program" / "gtsrb"
+    model_filename = base_dir / "program" / "saved_model" / "my_model.keras"
+    config_name = 'default_config'
 
-    while True:
-        escolha = input("Digite sua escolha (1 ou 2): ")
-        if escolha == '1':
-            model_filename = r"C:\Users\Pichau\Desktop\ti327v-projeto4-equipe4\program\saved_model\my_model.keras"
-            data_directory = r"C:\Users\Pichau\Desktop\ti327v-projeto4-equipe4\program\gtsrb"
-            return model_filename, data_directory, 'desktop_vini'
-        elif escolha == '2':
-            model_filename = r"C:\Users\vinic\OneDrive\Área de Trabalho\ti327v-projeto4-equipe4\program\saved_model\my_model.keras"
-            data_directory = r"C:\Users\vinic\OneDrive\Área de Trabalho\ti327v-projeto4-equipe4\program\gtsrb"
-            return model_filename, data_directory, 'laptop_vini'
-        else:
-            print("Escolha inválida. Por favor, digite 1 ou 2.")
+    return data_directory, model_filename, config_name
 
 
-def carregar_imagem(image_path):
+def load_image(image_path):
     """
     Carrega e preprocessa a imagem para a previsão.
 
@@ -124,7 +136,7 @@ def carregar_imagem(image_path):
         return None
 
 
-def prever_imagem(model, img_array):
+def predict_image(model, img_array):
     """
     Realiza a previsão da classe da imagem usando o modelo fornecido.
 
@@ -143,7 +155,7 @@ def prever_imagem(model, img_array):
     return predicted_class, confidence
 
 
-def exibir_resultado(image_path, predicted_class, confidence):
+def display_result(image_path, predicted_class, confidence):
     """
     Exibe a imagem com a classe prevista e a confiança.
 
@@ -159,15 +171,90 @@ def exibir_resultado(image_path, predicted_class, confidence):
     plt.show()
 
 
-if __name__ == '__main__':
-    # Mostrar o menu e obter as configurações selecionadas
-    model_filename, data_directory, config_name = mostrar_menu()
+def plot_confusion_matrix_func(all_true, all_predicted, results_directory):
+    """
+    Calcula e plota a matriz de confusão com todas as previsões e rótulos verdadeiros.
+
+    Parâmetros:
+        all_true (list): Lista de rótulos verdadeiros.
+        all_predicted (list): Lista de classes previstas.
+        results_directory (Path): Diretório onde o gráfico será salvo.
+    """
+    cm = confusion_matrix(all_true, all_predicted, labels=range(N))
+    plt.figure(figsize=(15, 15))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False,
+                xticklabels=[classes[i] for i in range(N)],
+                yticklabels=[classes[i] for i in range(N)])
+    plt.title('Matriz de Confusão nos Dados de Teste')
+    plt.xlabel('Classe Predita')
+    plt.ylabel('Classe Verdadeira')
+    plt.xticks(rotation=90)
+    plt.yticks(rotation=0)
+
+    # Caminho relativo
+    confusion_matrix_path = results_directory / "test" / "confusion_matrix_test.png"
+    confusion_matrix_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(confusion_matrix_path, bbox_inches='tight')
+    plt.close()
+    print(f"Matriz de confusão salva em: {confusion_matrix_path}")
+
+
+def save_classification_report_func(all_true, all_predicted, results_directory):
+    """
+    Salva o relatório de classificação com todas as previsões e rótulos verdadeiros.
+
+    Parâmetros:
+        all_true (list): Lista de rótulos verdadeiros.
+        all_predicted (list): Lista de classes previstas.
+        results_directory (Path): Diretório onde o relatório será salvo.
+    """
+    target_names = [classes[i] for i in range(N)]
+    report = classification_report(
+        all_true,
+        all_predicted,
+        labels=range(N),  # Especifica todas as 43 classes
+        target_names=target_names,
+        zero_division=0  # Opcional: evita erros de divisão por zero
+    )
+
+    # Caminho relativo
+    report_path = results_directory / "test" / "test_classification_report.txt"
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(report_path, 'w', encoding='utf-8') as f:
+        f.write(report)
+    print(f"Relatório de classificação salvo em: {report_path}")
+
+
+def main():
+    # Detectar o caminho base da aplicação
+    base_dir = detect_base_dir()
+    print(f"Caminho base detectado: {base_dir}")
+
+    # Configurar os caminhos relativos
+    data_directory, model_filename, config_name = config_paths(base_dir)
     print(f"\nConfiguração selecionada: {config_name}")
-    print(f"Caminho do modelo: {model_filename}")
-    print(f"Caminho dos dados: {data_directory}\n")
+    print(f"Diretório de dados: {data_directory}")
+    print(f"Caminho do modelo: {model_filename}\n")
+
+    # Configurar o caminho para a pasta 'results'
+    results_directory = base_dir / "results"
+    results_directory.mkdir(parents=True, exist_ok=True)
+    # Detectar o caminho base da aplicação
+    base_dir = detect_base_dir()
+    print(f"Caminho base detectado: {base_dir}")
+
+    # Configurar os caminhos relativos
+    data_directory, model_filename, config_name = config_paths(base_dir)
+    print(f"\nConfiguração selecionada: {config_name}")
+    print(f"Diretório de dados: {data_directory}")
+    print(f"Caminho do modelo: {model_filename}\n")
+
+    # Configurar o caminho para a pasta 'results'
+    results_directory = base_dir / "results"
+    results_directory.mkdir(parents=True, exist_ok=True)
 
     # Verifica se o modelo existe
-    if not os.path.exists(model_filename):
+    if not model_filename.exists():
         sys.exit(f"Modelo não encontrado em: {model_filename}")
 
     # Carrega o modelo treinado
@@ -179,42 +266,48 @@ if __name__ == '__main__':
     print("1. Testar todas as imagens em todos os diretórios")
     print("2. Testar todas as imagens em um diretório específico")
 
-    # Configura o diretório de resultados
-    result_dir = os.path.join(os.getcwd(), 'result')
-    if not os.path.exists(result_dir):
-        os.makedirs(result_dir)
+    # Listas para acumular todas as previsões e rótulos verdadeiros
+    all_predicted = []
+    all_true = []
 
     while True:
         escolha_teste = input("Digite sua escolha (1 ou 2): ")
         if escolha_teste == '1':
             # Testar todas as imagens em todos os diretórios
             for class_num in range(N):
-                class_dir = os.path.join(data_directory, str(class_num))
-                if not os.path.isdir(class_dir):
+                class_dir = data_directory / str(class_num)
+                if not class_dir.is_dir():
                     print(f"Diretório não encontrado para a classe {class_num}: {class_dir}")
                     continue
                 print(f"\nProcessando imagens da classe {class_num} - {classes[class_num]}:")
 
                 # Define o arquivo CSV para a classe atual
-                output_file = os.path.join(result_dir, f"{class_num}-result.csv")
+                output_file = results_directory / "test" / f"{class_num}-result.csv"
+                output_file.parent.mkdir(parents=True, exist_ok=True)
                 with open(output_file, mode='w', newline='', encoding='utf-8') as file:
                     writer = csv.writer(file)
                     writer.writerow(["Filename", "Actual_Class", "Predicted_Class", "Class_Name", "Confidence (%)"])
 
                     for filename in os.listdir(class_dir):
-                        filepath = os.path.join(class_dir, filename)
-                        if not os.path.isfile(filepath):
+                        filepath = class_dir / filename
+                        if not filepath.is_file():
                             continue
-                        img_array = carregar_imagem(filepath)
+                        img_array = load_image(filepath)
                         if img_array is not None:
-                            predicted_class, confidence = prever_imagem(model, img_array)
-                            # exibir_resultado(filepath, predicted_class, confidence)  # Opcional
+                            predicted_class, confidence = predict_image(model, img_array)
+                            # display_result(filepath, predicted_class, confidence)  # Opcional
                             print(
                                 f"{filename}: Classe real {class_num} - {classes[class_num]} | Classe predita {predicted_class} - {classes[predicted_class]} (Confiança: {confidence * 100:.2f}%)")
                             # Escreve os resultados no arquivo CSV
                             writer.writerow([filename, class_num, predicted_class, classes[predicted_class],
                                              f"{confidence * 100:.2f}"])
-                print(f"Resultados da classe {class_num} salvos em {output_file}")
+                            # Acumula para a matriz de confusão
+                            all_predicted.append(predicted_class)
+                            all_true.append(class_num)
+            # Após testar todas as classes, gerar a matriz de confusão e o relatório
+            print("\nGerando matriz de confusão e relatório de classificação...")
+            plot_confusion_matrix_func(all_true, all_predicted, results_directory)
+            save_classification_report_func(all_true, all_predicted, results_directory)
             break
         elif escolha_teste == '2':
             # Solicita ao usuário o número da classe (0 a 42)
@@ -226,34 +319,54 @@ if __name__ == '__main__':
                 else:
                     print(f"Entrada inválida. Por favor, digite um número entre 0 e {N - 1}.")
 
-            class_dir = os.path.join(data_directory, str(class_num))
-            if not os.path.isdir(class_dir):
+            class_dir = data_directory / str(class_num)
+            if not class_dir.is_dir():
                 sys.exit(f"Diretório não encontrado para a classe {class_num}: {class_dir}")
 
             print(f"\nProcessando imagens da classe {class_num} - {classes[class_num]}:")
 
             # Define o arquivo CSV para a classe selecionada
-            output_file = os.path.join(result_dir, f"{class_num}-result.csv")
+            output_file = results_directory / "test" / f"{class_num}-result.csv"
+            output_file.parent.mkdir(parents=True, exist_ok=True)
             with open(output_file, mode='w', newline='', encoding='utf-8') as file:
                 writer = csv.writer(file)
                 writer.writerow(["Filename", "Actual_Class", "Predicted_Class", "Class_Name", "Confidence (%)"])
 
+                # Listas para acumular previsões e rótulos verdadeiros da classe específica
+                class_predicted = []
+                class_true = []
+
                 for filename in os.listdir(class_dir):
-                    filepath = os.path.join(class_dir, filename)
-                    if not os.path.isfile(filepath):
+                    filepath = class_dir / filename
+                    if not filepath.is_file():
                         continue
-                    img_array = carregar_imagem(filepath)
+                    img_array = load_image(filepath)
                     if img_array is not None:
-                        predicted_class, confidence = prever_imagem(model, img_array)
-                        # exibir_resultado(filepath, predicted_class, confidence)  # Opcional
+                        predicted_class, confidence = predict_image(model, img_array)
+                        # display_result(filepath, predicted_class, confidence)  # Opcional
                         print(
                             f"{filename}: Classe real {class_num} - {classes[class_num]} | Classe predita {predicted_class} - {classes[predicted_class]} (Confiança: {confidence * 100:.2f}%)")
                         # Escreve os resultados no arquivo CSV
                         writer.writerow(
                             [filename, class_num, predicted_class, classes[predicted_class], f"{confidence * 100:.2f}"])
-            print(f"Resultados da classe {class_num} salvos em {output_file}")
+                        # Acumula para a matriz de confusão
+                        class_predicted.append(predicted_class)
+                        class_true.append(class_num)
+
+            # Adiciona as previsões e verdadeiros à lista geral
+            all_predicted.extend(class_predicted)
+            all_true.extend(class_true)
+
+            # Após testar a classe selecionada, gerar a matriz de confusão e o relatório
+            print("\nGerando matriz de confusão e relatório de classificação...")
+            plot_confusion_matrix_func(all_true, all_predicted, results_directory)
+            save_classification_report_func(all_true, all_predicted, results_directory)
             break
         else:
             print("Escolha inválida. Por favor, digite 1 ou 2.")
 
-    print("\nProcessamento concluído. Os resultados foram salvos na pasta 'result'.")
+    print("\nProcessamento concluído. Os resultados foram salvos na pasta 'results'.")
+
+
+if __name__ == '__main__':
+    main()
